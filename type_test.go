@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	yaml "gopkg.in/yaml.v2"
 )
 
 type KVPair struct {
@@ -14,61 +15,65 @@ type KVPair struct {
 	Value JsonV  `json:"value"`
 }
 
-func TestInt(t *testing.T) {
+func TestJson(t *testing.T) {
 	var data = `[
-
-	{
-		"name": "the-name",
-		"value": 1
-	},
-	{
-		"name": "the-name",
-		"value": "1"
-	},
-
-	{
-		"name": "the-name",
-		"value": ""
-	},
-	{
-		"name": "the-name",
-		"value": "1"
-	},
-
-	{
-		"name": "the-name",
-		"value": "false"
-	},
-	{
-		"name": "the-name",
-		"value": false
-	},
-	{
-		"name": "the-name",
-		"value": true
-	},
-
-	{
-		"name": "the-name",
-		"value": {
-			"key1": 1,
-			"key2": "2",
-			"key3": true
-		}
-	},
-
-	{
-		"name": "the-name",
-		"value": [
-			"1",
-			true,
-			{
-				"key1": "1",
-				"key2": 2
+		{
+			"name": "the-name",
+			"value": 1
+		},
+		{
+			"name": "the-name",
+			"value": "1"
+		},
+	
+		{
+			"name": "the-name",
+			"value": ""
+		},
+		{
+			"name": "the-name",
+			"value": "1"
+		},
+	
+		{
+			"name": "the-name",
+			"value": "false"
+		},
+		{
+			"name": "the-name",
+			"value": false
+		},
+		{
+			"name": "the-name",
+			"value": true
+		},
+	
+		{
+			"name": "the-name",
+			"value": {
+				"key1": 1,
+				"key2": "2",
+				"key3": true
 			}
-		]
-	}
-]`
+		},
+	
+		{
+			"name": "the-name",
+			"value": [
+				"1",
+				true,
+				{
+					"key1": "1",
+					"key2": 2
+				}
+			]
+		},
+	
+		{
+			"name": "the-name",
+			"value": "{\"key1\":\"v1\"}"
+		}
+	]`
 
 	var kv = []KVPair{}
 	err := json.Unmarshal([]byte(data), &kv)
@@ -76,7 +81,56 @@ func TestInt(t *testing.T) {
 		t.Errorf("err should not be nil, err:%s", err.Error())
 		return
 	}
+	assertResult(t, data, kv)
+	actual, err := json.MarshalIndent(kv, "", "	")
+	assert.NoError(t, err)
+	assert.True(t, compareText(data, string(actual)), "should be equal")
+}
 
+func TestYaml(t *testing.T) {
+	var data = `
+- name: the-name
+  value: 1
+- name: the-name
+  value: "1"
+- name: the-name
+  value: ""
+- name: the-name
+  value: "1"
+- name: the-name
+  value: "false"
+- name: the-name
+  value: false
+- name: the-name
+  value: true
+- name: the-name
+  value: 
+    key1: 1
+    key2: "2"
+    key3: true
+- name: the-name
+  value: 
+    - "1"
+    - true
+    - key1: "1"
+      key2: 2
+- name: the-name
+  value: '{\"key1\":\"v1\"}'`
+
+	var kv = []KVPair{}
+	err := yaml.Unmarshal([]byte(data), &kv)
+	if err != nil {
+		t.Errorf("err should not be nil, err:%s", err.Error())
+		return
+	}
+	assertResult(t, data, kv)
+
+	actual, err := yaml.Marshal(kv)
+	assert.NoError(t, err)
+	assert.True(t, compareText(data, string(actual)), "should be equal")
+}
+
+func assertResult(t *testing.T, data string, kv []KVPair) {
 	// case 0
 	caseData := kv[0]
 	assert.Equal(t, int64(1), caseData.Value.IntVal, "should be equal when value is int")
@@ -123,9 +177,9 @@ func TestInt(t *testing.T) {
 	assert.Equal(t, "1", caseData.Value.ArrayVal[2].StringMapVal["key1"].StringVal, "Should be equal")
 	assert.Equal(t, int64(2), caseData.Value.ArrayVal[2].StringMapVal["key2"].IntVal, "Should be equal")
 
-	jsonData, err := json.MarshalIndent(kv, "", "	")
-	assert.NoError(t, err)
-	assert.True(t, compareText(data, string(jsonData)), "json should be equal")
+	// case 9
+	caseData = kv[9]
+	assert.Equal(t, String, caseData.Value.Type, "Should be string")
 }
 
 func compareText(txtSource string, txtTarget string) bool {

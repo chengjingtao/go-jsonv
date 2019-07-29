@@ -39,12 +39,56 @@ func (v *JsonV) UnmarshalJSON(value []byte) (err error) {
 	}
 }
 
-// func (v Object) String() string {
-// 	if v.Type == String {
-// 		return v.StringVal
-// 	}
-// 	return strconv.Itoa(1)
-// }
+func (v *JsonV) UnmarshalYAML(unmarshal func(interface{}) error) error {
+	var nullV = &struct{}{}
+	err := unmarshal(nullV)
+	if err == nil && nullV == nil {
+		v.Type = Null
+		return nil
+	}
+
+	var intV int64
+	err = unmarshal(&intV)
+	if err == nil {
+		v.Type = Int
+		v.IntVal = intV
+		return nil
+	}
+
+	var boolV bool
+	err = unmarshal(&boolV)
+	if err == nil {
+		v.Type = Bool
+		v.BoolVal = boolV
+		return nil
+	}
+
+	var stringV string
+	err = unmarshal(&stringV)
+	if err == nil {
+		v.Type = String
+		v.StringVal = stringV
+		return nil
+	}
+
+	var stringMapV = map[string]JsonV{}
+	err = unmarshal(&stringMapV)
+	if err == nil {
+		v.Type = StringMap
+		v.StringMapVal = stringMapV
+		return nil
+	}
+
+	var arrayV = []JsonV{}
+	err = unmarshal(&arrayV)
+	if err == nil {
+		v.Type = Arrary
+		v.ArrayVal = arrayV
+		return nil
+	}
+
+	return fmt.Errorf("UnKnown type when unmarshal yaml")
+}
 
 func (v JsonV) MarshalJSON() ([]byte, error) {
 	switch v.Type {
@@ -62,6 +106,25 @@ func (v JsonV) MarshalJSON() ([]byte, error) {
 		return json.Marshal(v.ArrayVal)
 	default:
 		return []byte{}, fmt.Errorf("impossible V.Type: %#v", v.Type)
+	}
+}
+
+func (v JsonV) MarshalYAML() (interface{}, error) {
+	switch v.Type {
+	case Null:
+		return nil, nil
+	case Int:
+		return v.IntVal, nil
+	case String:
+		return v.StringVal, nil
+	case Bool:
+		return v.BoolVal, nil
+	case StringMap:
+		return v.StringMapVal, nil
+	case Arrary:
+		return v.ArrayVal, nil
+	default:
+		return nil, fmt.Errorf("impossible V.Type: %#v", v.Type)
 	}
 }
 

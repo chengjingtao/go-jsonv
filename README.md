@@ -1,5 +1,5 @@
 # Description
-Marshal or Unmarshal json value to nondeterministic go struct
+Marshal or Unmarshal json or yaml value to nondeterministic go struct
 
 # How to use
 
